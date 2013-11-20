@@ -1,0 +1,16 @@
+{
+    "name": "riak-genesis",
+    "description": "A tool to seed a riak database with data defined in a javascript DSL",
+    "version": "0.1.0",
+    "repository": "http://github.com/keis/riak-genesis.git",
+    "keywords": ["riak"],
+    "license": "MIT",
+    "main": "genesis.js",
+    "bin": {
+        "riak-genesis": "./genesis.js"
+    },
+    "dependencies": {
+        "async": "~0.2.9",
+        "riak-js": "~0.10.2"
+    }
+}
