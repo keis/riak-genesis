@@ -25,17 +25,22 @@ function seedContext(ctx) {
                     data = undefined;
                 }
 
-                data = data || {};
-                bucket[key] = lastObj = {
-                    key: key,
-                    bucket: name,
-                    data: data,
-                    links: []
-                };
+                lastObj = bucket[key];
+
+                if (!lastObj) {
+                    bucket[key] = lastObj = {
+                        key: key,
+                        bucket: name,
+                        data: data || {},
+                        links: []
+                    };
+                } else if (data) {
+                    throw new Error("Trying to override data of " + bucket + "/" + key);
+                }
 
                 // Run callback in context of data object.
                 if (fun) {
-                    fun.call(data);
+                    fun.call(lastObj.data);
                 }
 
                 return lastObj;
