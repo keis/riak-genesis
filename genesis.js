@@ -15,8 +15,9 @@ function seedContext(ctx) {
      * Define a new bucket, the returned value is a function that creates
      * members of the bucket.
      */
-    ctx.bucket = function (name) {
-        var bucket = buckets[name];
+    ctx.bucket = function (name, properties) {
+        var bucket = buckets[name],
+            objects = {};
 
         if (!bucket) {
             buckets[name] = bucket = function (key, data, fun) {
@@ -25,10 +26,10 @@ function seedContext(ctx) {
                     data = undefined;
                 }
 
-                lastObj = bucket[key];
+                lastObj = objects[key];
 
                 if (!lastObj) {
-                    bucket[key] = lastObj = {
+                    objects[key] = lastObj = {
                         key: key,
                         bucket: name,
                         data: data || {},
@@ -45,6 +46,9 @@ function seedContext(ctx) {
 
                 return lastObj;
             };
+
+            bucket.objects = objects;
+            bucket.properties = properties || {};
         }
 
         return bucket;
@@ -93,16 +97,19 @@ function seedContext(ctx) {
 /**
  * Iterate over each item in each bucket.
  */
-function iterateContextAsync(context, iterator, done) {
+function iterateContextAsync(context, eachBucket, eachValue, done) {
     var workers = 4;
 
     async.eachSeries(Object.keys(context), function (name, callback) {
-        var bucket = context[name];
+        var bucket = context[name],
+            objects = bucket.objects;
 
-        async.eachLimit(Object.keys(bucket), workers, function (key, callback) {
-            var obj = bucket[key];
-            iterator(name, obj, callback);
-        }, callback);
+        eachBucket(name, bucket, function () {
+            async.eachLimit(Object.keys(objects), workers, function (key, callback) {
+                var obj = objects[key];
+                eachValue(name, obj, callback);
+            }, callback);
+        });
     }, done);
 }
 
@@ -113,7 +120,24 @@ function processFile(file, riak, options, callback) {
     var abspath = path.resolve(file),
         buckets;
 
-    function saveOne(bucket, obj, callback) {
+    function saveBucket(name, bucket, callback) {
+        if (!bucket.properties) {
+            return callback();
+        }
+
+        if (options.verbose) {
+            console.error('Configuring ' + name);
+        }
+
+        riak.saveBucket(name, bucket.properties, function (err) {
+            if (err) {
+                console.error(err);
+            }
+            callback();
+        });
+    }
+
+    function saveValue(bucket, obj, callback) {
         if (options.verbose) {
             console.error('Saving ' + bucket + '/' + obj.key);
         }
@@ -129,7 +153,7 @@ function processFile(file, riak, options, callback) {
 
     buckets = seedContext(global);
     require(abspath);
-    iterateContextAsync(buckets, saveOne, callback);
+    iterateContextAsync(buckets, saveBucket, saveValue, callback);
 }
 
 /**
