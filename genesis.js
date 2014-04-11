@@ -9,7 +9,8 @@ var async = require('async'),
  */
 function seedContext(ctx) {
     var buckets = {},
-        lastObj;
+        lastObj,
+        lastValue;
 
     /**
      * Define a new bucket, the returned value is a function that creates
@@ -29,11 +30,15 @@ function seedContext(ctx) {
                 lastObj = objects[key];
 
                 if (!lastObj) {
+                    lastValue = {
+                        data: data || {},
+                        links: []
+                    };
+
                     objects[key] = lastObj = {
                         key: key,
                         bucket: name,
-                        data: data || {},
-                        links: []
+                        values: [lastValue]
                     };
                 } else if (data) {
                     throw new Error("Trying to override data of " + bucket + "/" + key);
@@ -41,7 +46,7 @@ function seedContext(ctx) {
 
                 // Run callback in context of data object.
                 if (fun) {
-                    fun.call(lastObj.data);
+                    fun.call(lastValue.data);
                 }
 
                 return lastObj;
@@ -55,6 +60,34 @@ function seedContext(ctx) {
     };
 
     /**
+     * Create a sibling of the object currently being defined.
+     */
+    ctx.sibling = function (data, fun) {
+        if (!lastObj) {
+            throw new Error("sibling called with no active object");
+        }
+
+        if (typeof data === 'function') {
+            fun = data;
+            data = undefined;
+        }
+
+        lastValue = {
+            data: data || {},
+            links: []
+        };
+
+        lastObj.values.push(lastValue);
+
+        // Run callback in context of data object.
+        if (fun) {
+            fun.call(lastValue.data);
+        }
+
+        return lastObj;
+    };
+
+    /**
      * Configure a link from the object currently being defined.
      *
      * The link can either be in the form of a item as returned by calling a
@@ -64,7 +97,7 @@ function seedContext(ctx) {
      * The optional 2nd argument will be used as the tag of the link when used.
      */
     ctx.link = function (link, tag) {
-        if (!lastObj) {
+        if (!lastValue) {
             throw new Error("link called with no active object");
         }
 
@@ -75,7 +108,7 @@ function seedContext(ctx) {
         if (link.bucket && link.key) {
             link = {
                 bucket: link.bucket,
-                key: link.key,
+                key: link.key
             };
         } else {
             link = {
@@ -88,7 +121,7 @@ function seedContext(ctx) {
             link.tag = tag;
         }
 
-        lastObj.links.push(link);
+        lastValue.links.push(link);
     };
 
     return buckets;
@@ -142,12 +175,31 @@ function processFile(file, riak, options, callback) {
             console.error('Saving ' + bucket + '/' + obj.key);
         }
 
-        var meta = {links: obj.links};
-        riak.save(bucket, obj.key, obj.data, meta, function (err) {
-            if (err) {
+        // should be a HEAD request but that causes riak-js to crash if the
+        // resource has siblings.
+        riak.get(bucket, obj.key, function (err, value, meta) {
+            var vclock;
+
+            if (err && err.statusCode !== 404) {
                 console.error(err);
+                return callback();
             }
-            callback();
+
+            vclock = meta.vclock;
+
+            async.eachSeries(obj.values, function (value, callback) {
+                var meta = {
+                    links: value.links,
+                    vclock: vclock
+                };
+
+                riak.save(bucket, obj.key, value.data, meta, function (err) {
+                    if (err) {
+                        console.error(err);
+                    }
+                    callback();
+                });
+            }, callback);
         });
     }
 
