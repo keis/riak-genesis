@@ -4,6 +4,13 @@
 var async = require('async'),
     path = require('path');
 
+function forEach (callback) {
+    var self = this;
+    Object.keys(this.objects).forEach(function (key) {
+        callback.call(self, self.objects[key], key);
+    });
+}
+
 /**
  * Expose the functions that make the DSL to the given context.
  */
@@ -22,6 +29,7 @@ function seedContext(ctx) {
 
         if (!bucket) {
             buckets[name] = bucket = function (key, data, fun) {
+
                 if (typeof data === 'function') {
                     fun = data;
                     data = undefined;
@@ -54,6 +62,7 @@ function seedContext(ctx) {
 
             bucket.objects = objects;
             bucket.properties = properties || {};
+            bucket.forEach = forEach;
         }
 
         return bucket;

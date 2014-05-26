@@ -1,3 +1,4 @@
+sinon = require 'sinon'
 genesis = require '../genesis'
 
 describe "bucket", ->
@@ -28,3 +29,14 @@ describe "bucket", ->
                 value = this.foo
 
             assert.equal value, 'testvalue'
+
+    describe "forEach", ->
+        it "calls the iterator for each value in the bucket", ->
+            callback = sinon.stub()
+
+            bucket 'foo'
+            bucket 'bar'
+
+            bucket.forEach callback
+
+            assert.calledTwice callback
