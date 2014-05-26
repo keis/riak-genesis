@@ -222,6 +222,7 @@ function processFile(file, riak, options, callback) {
  */
 function main() {
     var riak = require('riak-js'),
+        coffee,
         argv,
         url,
         client;
@@ -237,7 +238,10 @@ function main() {
 
     // Load coffee-script to get the require hook installed.
     try {
-        require('coffee-script');
+        coffee = require('coffee-script');
+        if (coffee.register) {
+            coffee.register();
+        }
     } catch (e) {
         if (argv.verbose) {
             console.error('Could not load coffee-script');
