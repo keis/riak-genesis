@@ -1,27 +1,29 @@
 {
-    "name": "riak-genesis",
-    "description": "A tool to seed a riak database with data defined in a javascript DSL",
-    "version": "0.1.1",
-    "repository": "http://github.com/keis/riak-genesis.git",
-    "keywords": ["riak"],
-    "license": "MIT",
-    "main": "genesis.js",
-    "bin": {
-        "riak-genesis": "./genesis.js"
-    },
-    "scripts": {
-        "test": "make test"
-    },
-    "dependencies": {
-        "async": "~0.9.0",
-        "riak-js": "~0.10.2",
-        "optimist": "~0.6.0"
-    },
-    "devDependencies": {
-        "mocha": "~1.19",
-        "coffee-script": "~1.6.3",
-        "chai": "~1.9.1",
-        "sinon": "~1.10.0",
-        "istanbul": "~0.2.10"
-    }
+  "name": "riak-genesis",
+  "description": "A tool to seed a riak database with data defined in a javascript DSL",
+  "version": "0.2.0",
+  "repository": "http://github.com/keis/riak-genesis.git",
+  "keywords": [
+    "riak"
+  ],
+  "license": "MIT",
+  "main": "genesis.js",
+  "bin": {
+    "riak-genesis": "./genesis.js"
+  },
+  "scripts": {
+    "test": "make test"
+  },
+  "dependencies": {
+    "async": "~0.9.0",
+    "riak-js": "~0.10.2",
+    "optimist": "~0.6.0"
+  },
+  "devDependencies": {
+    "mocha": "~1.19",
+    "coffee-script": "~1.6.3",
+    "chai": "~1.9.1",
+    "sinon": "~1.10.0",
+    "istanbul": "~0.2.10"
+  }
 }
